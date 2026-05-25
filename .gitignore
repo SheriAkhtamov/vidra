@@ -4,95 +4,40 @@
 *.obj
 *.a
 *.lib
-*.dll
-*.so
 *.dylib
+*.so
+*.dll
 *.exe
-
-# Xcode/Swift build artifacts
-*.swiftmodule
-*.swiftdoc
-*.dSYM/
 build/
-DerivedData/
-
-# Visual Studio/Windows build artifacts
-Debug/
-Release/
-x64/
-x86/
-*.vcxproj.*
-*.user
-*.sln.ide
-ipch/
-*.aps
-*.ncb
-*.opt
-*.plg
-*.tlb
-*.tli
-*.tmp
-*.userosscache
-*.VC.db
-*.VC.VC.opendb
+dist/
+release/
+debug/
 
 # Dependencies
-node_modules/
-venv/
-.venv/
-__pycache__/
-*.egg-info/
-.Python
+*.framework/
+Pods/
+Carthage/
+DerivedData/
+*.xcodeproj/
+*.xcworkspace/
 
-# Logs
+# Swift specific
+*.swiftmodule/
+*.swiftdoc/
+*.sib/
+
+# Temporary files
+*.tmp
 *.log
+*.swp
+*~
 
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-desktop.ini
-
-# Environment variables
+# Environment
 .env
 .env.local
 *.env.*
 
-# Editors
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Coverage reports
-coverage/
-htmlcov/
-.coverage
-*.coveragerc
-
-# Distribution / packaging
-.dist/
-dist/
-build/
-*.tar.gz
-*.whl
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Testing
-.pytest_cache/
-.mypy_cache/
-.hypothesis/
-
-# Gradle
-.gradle/
-build/
-
-# Temporary files
-*.tmp
-*~
+# OS generated files
+.DS_Store
+Thumbs.db
 ```
