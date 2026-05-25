@@ -1,33 +1,98 @@
 ```
-# Compiled and build artifacts
-*.pyc
-__pycache__/
+# Build artifacts
 *.o
 *.obj
-*.exe
+*.a
+*.lib
 *.dll
 *.so
-*.a
-*.out
+*.dylib
+*.exe
+
+# Xcode/Swift build artifacts
+*.swiftmodule
+*.swiftdoc
+*.dSYM/
+build/
+DerivedData/
+
+# Visual Studio/Windows build artifacts
+Debug/
+Release/
+x64/
+x86/
+*.vcxproj.*
+*.user
+*.sln.ide
+ipch/
+*.aps
+*.ncb
+*.opt
+*.plg
+*.tlb
+*.tli
+*.tmp
+*.userosscache
+*.VC.db
+*.VC.VC.opendb
 
 # Dependencies
-.venv/
+node_modules/
 venv/
+.venv/
+__pycache__/
+*.egg-info/
+.Python
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Environment variables
 .env
 .env.local
 *.env.*
 
-# Logs and temp files
-*.log
-*.tmp
-*.swp
-
 # Editors
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# Build/dist directories
-build/
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+*.coveragerc
+
+# Distribution / packaging
+.dist/
 dist/
-target/
+build/
+*.tar.gz
+*.whl
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Testing
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+
+# Gradle
+.gradle/
+build/
+
+# Temporary files
+*.tmp
+*~
 ```
