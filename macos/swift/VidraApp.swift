@@ -10,6 +10,7 @@ import Foundation
 import WebKit
 
 // MARK: - 🎨 2026 AERO GLASS PREMIUM PALETTE (LIGHT)
+// Enhanced with smoother gradients and better contrast
 
 struct VidraColors {
     static let bgApp = Color(red: 242/255, green: 246/255, blue: 252/255)
@@ -17,10 +18,13 @@ struct VidraColors {
     static let glassBg = Color(red: 1.0, green: 1.0, blue: 1.0)
     static let glassBgSoft = Color(red: 247/255, green: 250/255, blue: 255/255)
     static let glassBorder = Color(red: 214/255, green: 225/255, blue: 239/255)
+    static let glassBorderStrong = Color(red: 190/255, green: 205/255, blue: 225/255)
     
     static let primary = Color(red: 14/255, green: 107/255, blue: 255/255)
     static let primaryHover = Color(red: 10/255, green: 86/255, blue: 204/255)
     static let primaryLight = Color(red: 232/255, green: 241/255, blue: 255/255)
+    static let primaryGradientStart = Color(red: 14/255, green: 107/255, blue: 255/255)
+    static let primaryGradientEnd = Color(red: 10/255, green: 86/255, blue: 204/255)
     
     static let teal = Color(red: 20/255, green: 184/255, blue: 166/255)
     static let tealDark = Color(red: 15/255, green: 148/255, blue: 135/255)
@@ -36,8 +40,10 @@ struct VidraColors {
     
     static let ok = Color(red: 22/255, green: 179/255, blue: 100/255)
     static let okDark = Color(red: 19/255, green: 146/255, blue: 85/255)
+    static let okLight = Color(red: 234/255, green: 249/255, blue: 241/255)
     
     static let error = Color(red: 229/255, green: 72/255, blue: 77/255)
+    static let errorLight = Color(red: 253/255, green: 238/255, blue: 238/255)
     static let warn = Color(red: 245/255, green: 158/255, blue: 11/255)
 }
 
@@ -234,21 +240,26 @@ class AppViewModel: ObservableObject {
 
 struct GlassCard: View {
     var content: AnyView
+    var highlight: Bool = false
     
-    init(@ViewBuilder content: () -> some View) {
+    init(highlight: Bool = false, @ViewBuilder content: () -> some View) {
+        self.highlight = highlight
         self.content = AnyView(content())
     }
     
     var body: some View {
         content
-            .padding()
-            .background(VidraColors.glassBg)
-            .cornerRadius(20)
-            .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(VidraColors.glassBorder, lineWidth: 1)
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(VidraColors.glassBg)
+                    .shadow(color: Color.black.opacity(0.06), radius: 12, x: 0, y: 6)
             )
-            .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(highlight ? VidraColors.primary.opacity(0.3) : VidraColors.glassBorder, lineWidth: 1)
+            )
+            .animation(.easeInOut(duration: 0.2), value: highlight)
     }
 }
 
@@ -256,18 +267,38 @@ struct PrimaryButton: View {
     let title: String
     let action: () -> Void
     var disabled: Bool = false
+    var fullWidth: Bool = false
+    
+    @State private var isHovering: Bool = false
     
     var body: some View {
         Button(action: action) {
-            Text(title)
-                .font(.system(size: 14, weight: .bold))
-                .foregroundColor(.white)
-                .frame(height: 44)
-                .frame(minWidth: 120)
-                .background(disabled ? VidraColors.primary.opacity(0.5) : VidraColors.primary)
-                .cornerRadius(12)
+            HStack {
+                Spacer()
+                Text(title)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.white)
+                Spacer()
+            }
+            .frame(height: 48)
+            .frame(minWidth: fullWidth ? .none : 140)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [disabled ? VidraColors.primary.opacity(0.5) : VidraColors.primary,
+                                               disabled ? VidraColors.primary.opacity(0.3) : VidraColors.primaryHover]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .cornerRadius(14)
+            .shadow(color: disabled ? Color.clear : VidraColors.primary.opacity(0.4), radius: 8, x: 0, y: 4)
+            .scaleEffect(isHovering && !disabled ? 1.02 : 1.0)
+            .animation(.easeInOut(duration: 0.15), value: isHovering)
         }
         .disabled(disabled)
+        .onHover { hovering in
+            isHovering = hovering
+        }
     }
 }
 
@@ -278,18 +309,31 @@ struct SecondaryButton: View {
     var bgColor: Color = VidraColors.glassBgSoft
     var hoverColor: Color = VidraColors.primaryLight
     var disabled: Bool = false
+    var icon: String? = nil
     
     @State private var isHovering: Bool = false
     
     var body: some View {
         Button(action: action) {
-            Text(title)
-                .font(.system(size: 14, weight: .bold))
-                .foregroundColor(textColor)
-                .frame(height: 38)
-                .frame(minWidth: 100)
-                .background(isHovering && !disabled ? hoverColor : bgColor)
-                .cornerRadius(12)
+            HStack(spacing: 8) {
+                if let icon = icon {
+                    Image(systemName: icon)
+                        .font(.system(size: 12, weight: .semibold))
+                }
+                Text(title)
+                    .font(.system(size: 14, weight: .bold))
+            }
+            .foregroundColor(textColor)
+            .frame(height: 42)
+            .frame(minWidth: 110)
+            .background(isHovering && !disabled ? hoverColor : bgColor)
+            .cornerRadius(14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(VidraColors.glassBorder.opacity(0.5), lineWidth: 1)
+            )
+            .scaleEffect(isHovering && !disabled ? 1.02 : 1.0)
+            .animation(.easeInOut(duration: 0.15), value: isHovering)
         }
         .disabled(disabled)
         .onHover { hovering in
@@ -379,18 +423,27 @@ struct NavButton: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 12) {
+            HStack(spacing: 14) {
                 Image(systemName: icon)
-                    .frame(width: 20)
+                    .font(.system(size: 16, weight: .semibold))
+                    .frame(width: 22)
                 Text(title)
                     .font(.system(size: 14, weight: .bold))
                 Spacer()
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(isSelected ? VidraColors.primaryLight : Color.clear)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(isSelected ? VidraColors.primaryLight : Color.clear)
+            )
             .foregroundColor(isSelected ? .primary : .textSec)
-            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(isSelected ? VidraColors.primary.opacity(0.2) : Color.clear, lineWidth: 1)
+            )
+            .scaleEffect(isHovering && !isSelected ? 1.02 : 1.0)
+            .animation(.easeInOut(duration: 0.15), value: isHovering)
         }
         .buttonStyle(.plain)
         .onHover { hovering in
@@ -419,26 +472,32 @@ struct DownloadTabView: View {
                         
                         TextField("Вставьте URL сюда...", text: $viewModel.currentUrl)
                             .textFieldStyle(.roundedBorder)
-                            .frame(height: 48)
-                            .font(.system(size: 14))
+                            .frame(height: 52)
+                            .font(.system(size: 14, weight: .medium))
+                            .padding(.horizontal, 4)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(VidraColors.glassBorder, lineWidth: 1.5)
+                            )
                             .onSubmit {
                                 viewModel.startFetch()
                             }
                         
-                        HStack(spacing: 12) {
-                            SecondaryButton(title: "Вставить") {
+                        HStack(spacing: 10) {
+                            SecondaryButton(title: "Вставить", icon: "doc.on.clipboard") {
                                 if let clipboard = NSPasteboard.general.string(forType: .string) {
                                     viewModel.currentUrl = clipboard
                                 }
                             }
                             
                             SecondaryButton(title: "Очистить", textColor: .error, 
-                                          bgColor: VidraColors.error.opacity(0.1)) {
+                                          bgColor: VidraColors.errorLight) {
                                 viewModel.currentUrl = ""
                             }
                             
                             Toggle("Субтитры", isOn: $viewModel.subtitlesEnabled)
                                 .toggleStyle(.checkbox)
+                                .scaleEffect(1.1)
                             
                             Spacer()
                             
@@ -577,10 +636,12 @@ struct QualityRow: View {
     let isSelected: Bool
     let action: () -> Void
     
+    @State private var isHovering: Bool = false
+    
     var body: some View {
         Button(action: action) {
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(preset.label)
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(.textMain)
@@ -592,14 +653,31 @@ struct QualityRow: View {
                 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 18))
                         .foregroundColor(.primary)
+                } else {
+                    Circle()
+                        .stroke(VidraColors.glassBorder, lineWidth: 2)
+                        .frame(width: 18, height: 18)
                 }
             }
-            .padding()
-            .background(isSelected ? VidraColors.primaryLight : VidraColors.glassBgSoft)
-            .cornerRadius(12)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(isSelected ? VidraColors.primaryLight : (isHovering ? VidraColors.glassBgSoft : Color.clear))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(isSelected ? VidraColors.primary.opacity(0.3) : VidraColors.glassBorder.opacity(0.5), lineWidth: 1)
+            )
+            .scaleEffect(isHovering ? 1.01 : 1.0)
+            .animation(.easeInOut(duration: 0.15), value: isHovering)
         }
         .buttonStyle(.plain)
+        .onHover { hovering in
+            isHovering = hovering
+        }
     }
 }
 

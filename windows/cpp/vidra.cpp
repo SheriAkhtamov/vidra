@@ -34,6 +34,7 @@
 
 // ==========================================
 // 🎨 2026 AERO GLASS PREMIUM PALETTE (LIGHT)
+// Enhanced with smoother gradients and better contrast
 // ==========================================
 #define BG_APP          RGB(242, 246, 252)
 #define BG_LAYER        RGB(231, 238, 248)
@@ -45,11 +46,14 @@
 #define GLASS_BG_SOFT   RGB(247, 250, 255)
 #define GLASS_BORDER    RGB(214, 225, 239)
 #define GLASS_BORDER_FOCUS RGB(163, 188, 216)
+#define GLASS_BORDER_STRONG RGB(190, 205, 225)
 
 #define PRI             RGB(14, 107, 255)
 #define PRI_H           RGB(10, 86, 204)
 #define PRI_L           RGB(232, 241, 255)
 #define PRI_MUTED       RGB(127, 174, 246)
+#define PRI_GRAD_START  RGB(14, 107, 255)
+#define PRI_GRAD_END    RGB(10, 86, 204)
 
 #define TEAL            RGB(20, 184, 166)
 #define TEAL_H          RGB(15, 148, 135)
@@ -297,16 +301,46 @@ void SetControlFont(HWND hWnd, HFONT hFont) {
     SendMessage(hWnd, WM_SETFONT, (WPARAM)hFont, TRUE);
 }
 
+// Draw rounded rectangle helper
+void DrawRoundedRect(HDC hdc, RECT rc, int radius, COLORREF bgColor, COLORREF borderColor, bool gradient = false) {
+    HRGN hRgn = CreateRoundRectRgn(rc.left, rc.top, rc.right + 1, rc.bottom + 1, radius, radius);
+    
+    // Background
+    if (gradient) {
+        // Simple gradient simulation with two fills
+        GRADIENT_RECT gRect = {0};
+        TRIVERTEX vert[2] = {
+            {rc.left, rc.top, GetRValue(bgColor) << 8, GetGValue(bgColor) << 8, GetBValue(bgColor) << 8, 0},
+            {rc.right, rc.bottom, GetRValue(borderColor) << 8, GetGValue(borderColor) << 8, GetBValue(borderColor) << 8, 0}
+        };
+        GradientFill(hdc, vert, 2, &gRect, 1, GRADIENT_FILL_RECT_V);
+    } else {
+        HBRUSH hBrush = CreateSolidBrush(bgColor);
+        FillRgn(hdc, hRgn, hBrush);
+        DeleteObject(hBrush);
+    }
+    
+    // Border
+    HPEN hPen = CreatePen(PS_SOLID, 1, borderColor);
+    SelectObject(hdc, hPen);
+    SelectObject(hdc, GetStockObject(NULL_BRUSH));
+    RoundRect(hdc, rc.left, rc.top, rc.right, rc.bottom, radius, radius);
+    DeleteObject(hPen);
+    DeleteObject(hRgn);
+}
+
 HWND CreateStyledButton(HWND hParent, int id, const wchar_t* text, 
                         int x, int y, int w, int h, 
                         COLORREF bgColor, COLORREF textColor,
                         HFONT hFont, bool border = false) {
-    HWND hBtn = CreateWindowExW(0, L"BUTTON", text,
-        WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+    HWND hBtn = CreateWindowExW(WS_EX_COMPOSITED, L"BUTTON", text,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
         x, y, w, h, hParent, (HMENU)id, NULL, NULL);
     
     if (hBtn) {
         SetControlFont(hBtn, hFont);
+        SetPropW(hBtn, L"BgColor", (HANDLE)(LONG_PTR)((long)(GetRValue(bgColor)) | (GetGValue(bgColor) << 8) | (GetBValue(bgColor) << 16)));
+        SetPropW(hBtn, L"TextColor", (HANDLE)(LONG_PTR)((long)(GetRValue(textColor)) | (GetGValue(textColor) << 8) | (GetBValue(textColor) << 16)));
     }
     return hBtn;
 }
@@ -756,6 +790,66 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 SmoothProgressTimer(hWnd);
             }
             return 0;
+        }
+        
+        case WM_DRAWITEM: {
+            DRAWITEMSTRUCT* pDIS = (DRAWITEMSTRUCT*)lParam;
+            
+            if (pDIS->CtlType == ODT_BUTTON) {
+                HWND hBtn = pDIS->hwndItem;
+                RECT rc = pDIS->rcItem;
+                HDC hdc = pDIS->hDC;
+                
+                // Get stored colors
+                COLORREF bgColor = (COLORREF)((LONG_PTR)GetPropW(hBtn, L"BgColor") & 0x00FFFFFF);
+                COLORREF textColor = (COLORREF)((LONG_PTR)GetPropW(hBtn, L"TextColor") & 0x00FFFFFF);
+                
+                bool isPressed = (pDIS->itemState & ODS_SELECTED) != 0;
+                bool isDisabled = (pDIS->itemState & ODS_DISABLED) != 0;
+                
+                // Adjust colors for states
+                if (isDisabled) {
+                    bgColor = RGB(
+                        GetRValue(bgColor) * 0.6 + GetRValue(BG_APP) * 0.4,
+                        GetGValue(bgColor) * 0.6 + GetGValue(BG_APP) * 0.4,
+                        GetBValue(bgColor) * 0.6 + GetBValue(BG_APP) * 0.4
+                    );
+                } else if (isPressed) {
+                    bgColor = RGB(
+                        max(0, GetRValue(bgColor) - 20),
+                        max(0, GetGValue(bgColor) - 20),
+                        max(0, GetBValue(bgColor) - 20)
+                    );
+                }
+                
+                // Draw rounded button with gradient for primary buttons
+                bool isPrimary = (bgColor == PRI || bgColor == OK_COLOR);
+                DrawRoundedRect(hdc, rc, 14, bgColor, isPrimary ? PRI_H : GLASS_BORDER, isPrimary);
+                
+                // Draw text centered
+                SetBkMode(hdc, TRANSPARENT);
+                SetTextColor(hdc, isDisabled ? TEXT_TERT : textColor);
+                
+                wchar_t text[256];
+                GetWindowTextW(hBtn, text, 256);
+                
+                // Center text
+                SIZE textSize;
+                GetTextExtentPoint32W(hdc, text, wcslen(text), &textSize);
+                int x = (rc.left + rc.right - textSize.cx) / 2;
+                int y = (rc.top + rc.bottom - textSize.cy) / 2;
+                
+                // Apply slight offset when pressed
+                if (isPressed) {
+                    x += 1;
+                    y += 1;
+                }
+                
+                TextOutW(hdc, x, y, text, wcslen(text));
+                
+                return TRUE;
+            }
+            break;
         }
         
         case WM_CTLCOLORSTATIC: {
