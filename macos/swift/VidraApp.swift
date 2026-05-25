@@ -10,7 +10,7 @@ import Foundation
 import WebKit
 
 // MARK: - 🎨 2026 AERO GLASS PREMIUM PALETTE (LIGHT)
-// Enhanced with smoother gradients and better contrast
+// Enhanced with smoother gradients, better contrast and refined shadows
 
 struct VidraColors {
     static let bgApp = Color(red: 242/255, green: 246/255, blue: 252/255)
@@ -45,6 +45,11 @@ struct VidraColors {
     static let error = Color(red: 229/255, green: 72/255, blue: 77/255)
     static let errorLight = Color(red: 253/255, green: 238/255, blue: 238/255)
     static let warn = Color(red: 245/255, green: 158/255, blue: 11/255)
+    
+    // Shadow colors for premium feel
+    static let shadowSoft = Color.black.opacity(0.04)
+    static let shadowMedium = Color.black.opacity(0.08)
+    static let shadowStrong = Color.black.opacity(0.12)
 }
 
 // MARK: - Models
@@ -249,17 +254,17 @@ struct GlassCard: View {
     
     var body: some View {
         content
-            .padding(20)
+            .padding(24)
             .background(
-                RoundedRectangle(cornerRadius: 24)
+                RoundedRectangle(cornerRadius: 28)
                     .fill(VidraColors.glassBg)
-                    .shadow(color: Color.black.opacity(0.06), radius: 12, x: 0, y: 6)
+                    .shadow(color: VidraColors.shadowSoft, radius: 16, x: 0, y: 8)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 24)
+                RoundedRectangle(cornerRadius: 28)
                     .stroke(highlight ? VidraColors.primary.opacity(0.3) : VidraColors.glassBorder, lineWidth: 1)
             )
-            .animation(.easeInOut(duration: 0.2), value: highlight)
+            .animation(.easeInOut(duration: 0.25), value: highlight)
     }
 }
 
@@ -274,14 +279,18 @@ struct PrimaryButton: View {
     var body: some View {
         Button(action: action) {
             HStack {
-                Spacer()
+                if isHovering && !disabled {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                }
                 Text(title)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundColor(.white)
                 Spacer()
             }
-            .frame(height: 48)
-            .frame(minWidth: fullWidth ? .none : 140)
+            .frame(height: 52)
+            .frame(minWidth: fullWidth ? .none : 150)
+            .padding(.horizontal, 20)
             .background(
                 LinearGradient(
                     gradient: Gradient(colors: [disabled ? VidraColors.primary.opacity(0.5) : VidraColors.primary,
@@ -290,14 +299,16 @@ struct PrimaryButton: View {
                     endPoint: .bottomTrailing
                 )
             )
-            .cornerRadius(14)
-            .shadow(color: disabled ? Color.clear : VidraColors.primary.opacity(0.4), radius: 8, x: 0, y: 4)
-            .scaleEffect(isHovering && !disabled ? 1.02 : 1.0)
-            .animation(.easeInOut(duration: 0.15), value: isHovering)
+            .cornerRadius(16)
+            .shadow(color: disabled ? Color.clear : VidraColors.primary.opacity(0.3), radius: 10, x: 0, y: 5)
+            .scaleEffect(isHovering && !disabled ? 1.03 : 1.0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isHovering)
         }
         .disabled(disabled)
         .onHover { hovering in
-            isHovering = hovering
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovering = hovering
+            }
         }
     }
 }
@@ -318,26 +329,30 @@ struct SecondaryButton: View {
             HStack(spacing: 8) {
                 if let icon = icon {
                     Image(systemName: icon)
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 13, weight: .semibold))
                 }
                 Text(title)
                     .font(.system(size: 14, weight: .bold))
             }
             .foregroundColor(textColor)
-            .frame(height: 42)
-            .frame(minWidth: 110)
+            .frame(height: 46)
+            .frame(minWidth: 120)
+            .padding(.horizontal, 16)
             .background(isHovering && !disabled ? hoverColor : bgColor)
-            .cornerRadius(14)
+            .cornerRadius(16)
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: 16)
                     .stroke(VidraColors.glassBorder.opacity(0.5), lineWidth: 1)
             )
-            .scaleEffect(isHovering && !disabled ? 1.02 : 1.0)
-            .animation(.easeInOut(duration: 0.15), value: isHovering)
+            .shadow(color: isHovering && !disabled ? VidraColors.shadowSoft : Color.clear, radius: 6, x: 0, y: 3)
+            .scaleEffect(isHovering && !disabled ? 1.03 : 1.0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isHovering)
         }
         .disabled(disabled)
         .onHover { hovering in
-            isHovering = hovering
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovering = hovering
+            }
         }
     }
 }
@@ -355,61 +370,76 @@ struct SidebarView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Logo
-            HStack(spacing: 12) {
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(VidraColors.primaryLight)
-                    .frame(width: 48, height: 48)
+            HStack(spacing: 14) {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [VidraColors.primaryLight, VidraColors.tealLight]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 52, height: 52)
                     .overlay(
                         Text("V")
-                            .font(.system(size: 20, weight: .bold))
+                            .font(.system(size: 22, weight: .bold))
                             .foregroundColor(.primary)
                     )
+                    .shadow(color: VidraColors.shadowSoft, radius: 8, x: 0, y: 4)
                 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text("Vidra")
-                        .font(.system(size: 24, weight: .bold))
+                        .font(.system(size: 26, weight: .bold))
                         .foregroundColor(.textMain)
                     Text("Universal Video Downloader")
-                        .font(.system(size: 12))
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.textTert)
                 }
                 Spacer()
             }
-            .padding(20)
+            .padding(24)
             
             Divider()
+                .padding(.horizontal, 20)
             
             // Navigation
-            VStack(spacing: 2) {
-                NavButton(title: "Загрузка", icon: "arrow.down.circle", 
+            VStack(spacing: 4) {
+                NavButton(title: "Загрузка", icon: "arrow.down.circle.fill", 
                          isSelected: selectedTab == .download) {
                     selectedTab = .download
                 }
-                NavButton(title: "Очередь", icon: "list.bullet", 
+                NavButton(title: "Очередь", icon: "list.bullet.rectangle", 
                          isSelected: selectedTab == .queue) {
                     selectedTab = .queue
                 }
-                NavButton(title: "История", icon: "clock", 
+                NavButton(title: "История", icon: "clock.arrow.circlepath", 
                          isSelected: selectedTab == .history) {
                     selectedTab = .history
                 }
-                NavButton(title: "Настройки", icon: "gear", 
+                NavButton(title: "Настройки", icon: "gearshape.fill", 
                          isSelected: selectedTab == .settings) {
                     selectedTab = .settings
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 14)
             
             Spacer()
             
             // Footer
             Text("Vidra 2026 • by Sheri Akhtamov")
-                .font(.system(size: 12))
+                .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.textTert)
-                .padding(20)
+                .padding(24)
         }
-        .frame(width: 280)
+        .frame(width: 290)
         .background(VidraColors.glassBgSoft)
+        .overlay(
+            Rectangle()
+                .fill(VidraColors.glassBorder.opacity(0.3))
+                .frame(width: 1)
+                .offset(x: -0.5),
+            alignment: .trailing
+        )
     }
 }
 
@@ -425,29 +455,32 @@ struct NavButton: View {
         Button(action: action) {
             HStack(spacing: 14) {
                 Image(systemName: icon)
-                    .font(.system(size: 16, weight: .semibold))
-                    .frame(width: 22)
+                    .font(.system(size: 17, weight: .semibold))
+                    .frame(width: 24)
                 Text(title)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 15, weight: isSelected ? .bold : .medium))
                 Spacer()
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 14)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 15)
             .background(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: 16)
                     .fill(isSelected ? VidraColors.primaryLight : Color.clear)
             )
             .foregroundColor(isSelected ? .primary : .textSec)
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: 16)
                     .stroke(isSelected ? VidraColors.primary.opacity(0.2) : Color.clear, lineWidth: 1)
             )
+            .shadow(color: isSelected ? VidraColors.shadowSoft : Color.clear, radius: 4, x: 0, y: 2)
             .scaleEffect(isHovering && !isSelected ? 1.02 : 1.0)
-            .animation(.easeInOut(duration: 0.15), value: isHovering)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isHovering)
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            isHovering = hovering
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovering = hovering
+            }
         }
     }
 }
@@ -641,42 +674,46 @@ struct QualityRow: View {
     var body: some View {
         Button(action: action) {
             HStack {
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(preset.label)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundColor(.textMain)
                     Text(preset.sublabel)
-                        .font(.system(size: 12))
+                        .font(.system(size: 13))
                         .foregroundColor(.textTert)
                 }
                 Spacer()
                 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 18))
+                        .font(.system(size: 20))
                         .foregroundColor(.primary)
+                        .shadow(color: VidraColors.primary.opacity(0.3), radius: 4, x: 0, y: 2)
                 } else {
                     Circle()
                         .stroke(VidraColors.glassBorder, lineWidth: 2)
-                        .frame(width: 18, height: 18)
+                        .frame(width: 20, height: 20)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
             .background(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: 16)
                     .fill(isSelected ? VidraColors.primaryLight : (isHovering ? VidraColors.glassBgSoft : Color.clear))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: 16)
                     .stroke(isSelected ? VidraColors.primary.opacity(0.3) : VidraColors.glassBorder.opacity(0.5), lineWidth: 1)
             )
-            .scaleEffect(isHovering ? 1.01 : 1.0)
-            .animation(.easeInOut(duration: 0.15), value: isHovering)
+            .shadow(color: isSelected ? VidraColors.shadowSoft : Color.clear, radius: 6, x: 0, y: 3)
+            .scaleEffect(isHovering ? 1.02 : 1.0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isHovering)
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            isHovering = hovering
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovering = hovering
+            }
         }
     }
 }

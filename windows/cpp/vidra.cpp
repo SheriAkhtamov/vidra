@@ -34,7 +34,7 @@
 
 // ==========================================
 // 🎨 2026 AERO GLASS PREMIUM PALETTE (LIGHT)
-// Enhanced with smoother gradients and better contrast
+// Enhanced with smoother gradients, better contrast and refined shadows
 // ==========================================
 #define BG_APP          RGB(242, 246, 252)
 #define BG_LAYER        RGB(231, 238, 248)
@@ -80,6 +80,11 @@
 
 #define SHADOW_SOFT     RGB(221, 231, 244)
 #define SHADOW_STRONG   RGB(201, 216, 234)
+
+// Shadow opacity values for premium feel
+#define SHADOW_ALPHA_SOFT    10
+#define SHADOW_ALPHA_MED     20
+#define SHADOW_ALPHA_STRONG  30
 
 // ==========================================
 // Constants & IDs
@@ -301,7 +306,7 @@ void SetControlFont(HWND hWnd, HFONT hFont) {
     SendMessage(hWnd, WM_SETFONT, (WPARAM)hFont, TRUE);
 }
 
-// Draw rounded rectangle helper
+// Draw rounded rectangle with premium shadow
 void DrawRoundedRect(HDC hdc, RECT rc, int radius, COLORREF bgColor, COLORREF borderColor, bool gradient = false) {
     HRGN hRgn = CreateRoundRectRgn(rc.left, rc.top, rc.right + 1, rc.bottom + 1, radius, radius);
     
@@ -329,6 +334,25 @@ void DrawRoundedRect(HDC hdc, RECT rc, int radius, COLORREF bgColor, COLORREF bo
     DeleteObject(hRgn);
 }
 
+// Draw card with premium shadow effect
+void DrawCardWithShadow(HDC hdc, RECT rc, int radius, COLORREF bgColor) {
+    // Draw soft shadow first (offset slightly)
+    RECT shadowRc = rc;
+    shadowRc.left += 2;
+    shadowRc.top += 2;
+    shadowRc.right += 2;
+    shadowRc.bottom += 2;
+    
+    HRGN hShadowRgn = CreateRoundRectRgn(shadowRc.left, shadowRc.top, shadowRc.right + 1, shadowRc.bottom + 1, radius, radius);
+    HBRUSH hShadowBrush = CreateSolidBrush(SHADOW_SOFT);
+    FillRgn(hdc, hShadowRgn, hShadowBrush);
+    DeleteObject(hShadowBrush);
+    DeleteObject(hShadowRgn);
+    
+    // Draw main card on top
+    DrawRoundedRect(hdc, rc, radius, bgColor, GLASS_BORDER, false);
+}
+
 HWND CreateStyledButton(HWND hParent, int id, const wchar_t* text, 
                         int x, int y, int w, int h, 
                         COLORREF bgColor, COLORREF textColor,
@@ -341,6 +365,21 @@ HWND CreateStyledButton(HWND hParent, int id, const wchar_t* text,
         SetControlFont(hBtn, hFont);
         SetPropW(hBtn, L"BgColor", (HANDLE)(LONG_PTR)((long)(GetRValue(bgColor)) | (GetGValue(bgColor) << 8) | (GetBValue(bgColor) << 16)));
         SetPropW(hBtn, L"TextColor", (HANDLE)(LONG_PTR)((long)(GetRValue(textColor)) | (GetGValue(textColor) << 8) | (GetBValue(textColor) << 16)));
+    }
+    return hBtn;
+}
+
+HWND CreatePrimaryButton(HWND hParent, int id, const wchar_t* text, 
+                         int x, int y, int w, int h, HFONT hFont) {
+    HWND hBtn = CreateWindowExW(WS_EX_COMPOSITED, L"BUTTON", text,
+        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
+        x, y, w, h, hParent, (HMENU)id, NULL, NULL);
+    
+    if (hBtn) {
+        SetControlFont(hBtn, hFont);
+        SetPropW(hBtn, L"BgColor", (HANDLE)(LONG_PTR)((long)(GetRValue(PRI)) | (GetGValue(PRI) << 8) | (GetBValue(PRI) << 16)));
+        SetPropW(hBtn, L"TextColor", (HANDLE)(LONG_PTR)((long)(255) | (255 << 8) | (255 << 16)));
+        SetPropW(hBtn, L"IsPrimary", (HANDLE)TRUE);
     }
     return hBtn;
 }
@@ -803,11 +842,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 // Get stored colors
                 COLORREF bgColor = (COLORREF)((LONG_PTR)GetPropW(hBtn, L"BgColor") & 0x00FFFFFF);
                 COLORREF textColor = (COLORREF)((LONG_PTR)GetPropW(hBtn, L"TextColor") & 0x00FFFFFF);
+                BOOL isPrimary = (BOOL)(LONG_PTR)GetPropW(hBtn, L"IsPrimary");
                 
                 bool isPressed = (pDIS->itemState & ODS_SELECTED) != 0;
                 bool isDisabled = (pDIS->itemState & ODS_DISABLED) != 0;
+                bool isHovered = (pDIS->itemState & ODS_HOTLIGHT) != 0;
                 
                 // Adjust colors for states
+                COLORREF originalBgColor = bgColor;
                 if (isDisabled) {
                     bgColor = RGB(
                         GetRValue(bgColor) * 0.6 + GetRValue(BG_APP) * 0.4,
@@ -816,15 +858,48 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                     );
                 } else if (isPressed) {
                     bgColor = RGB(
-                        max(0, GetRValue(bgColor) - 20),
-                        max(0, GetGValue(bgColor) - 20),
-                        max(0, GetBValue(bgColor) - 20)
+                        max(0, GetRValue(bgColor) - 25),
+                        max(0, GetGValue(bgColor) - 25),
+                        max(0, GetBValue(bgColor) - 25)
+                    );
+                } else if (isHovered && !isDisabled) {
+                    // Subtle hover effect
+                    bgColor = RGB(
+                        min(255, GetRValue(bgColor) + 8),
+                        min(255, GetGValue(bgColor) + 8),
+                        min(255, GetBValue(bgColor) + 8)
                     );
                 }
                 
                 // Draw rounded button with gradient for primary buttons
-                bool isPrimary = (bgColor == PRI || bgColor == OK_COLOR);
-                DrawRoundedRect(hdc, rc, 14, bgColor, isPrimary ? PRI_H : GLASS_BORDER, isPrimary);
+                bool useGradient = (originalBgColor == PRI || originalBgColor == OK_COLOR);
+                
+                // Add shadow effect for premium feel
+                if (!isDisabled) {
+                    RECT shadowRc = rc;
+                    shadowRc.left += 2;
+                    shadowRc.top += 3;
+                    shadowRc.right += 2;
+                    shadowRc.bottom += 3;
+                    
+                    HRGN hShadowRgn = CreateRoundRectRgn(shadowRc.left, shadowRc.top, shadowRc.right + 1, shadowRc.bottom + 1, 16, 16);
+                    HBRUSH hShadowBrush = CreateSolidBrush(SHADOW_SOFT);
+                    FillRgn(hdc, hShadowRgn, hShadowBrush);
+                    DeleteObject(hShadowBrush);
+                    DeleteObject(hShadowRgn);
+                }
+                
+                // Draw button background with gradient if primary
+                if (useGradient && !isDisabled) {
+                    GRADIENT_RECT gRect = {0};
+                    TRIVERTEX vert[2] = {
+                        {rc.left, rc.top, GetRValue(PRI_GRAD_START) << 8, GetGValue(PRI_GRAD_START) << 8, GetBValue(PRI_GRAD_START) << 8, 0},
+                        {rc.right, rc.bottom, GetRValue(PRI_GRAD_END) << 8, GetGValue(PRI_GRAD_END) << 8, GetBValue(PRI_GRAD_END) << 8, 0}
+                    };
+                    GradientFill(hdc, vert, 2, &gRect, 1, GRADIENT_FILL_RECT_V);
+                } else {
+                    DrawRoundedRect(hdc, rc, 16, bgColor, GLASS_BORDER, false);
+                }
                 
                 // Draw text centered
                 SetBkMode(hdc, TRANSPARENT);
@@ -833,10 +908,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 wchar_t text[256];
                 GetWindowTextW(hBtn, text, 256);
                 
+                // Add icon for primary buttons on hover
+                int textStart = 0;
+                if (isPrimary && isHovered && !isDisabled) {
+                    // Draw download icon
+                    HICON hIcon = LoadIcon(NULL, IDI_DOWNARROW);
+                    if (hIcon) {
+                        DrawIconEx(hdc, rc.left + 12, rc.top + (rc.bottom - rc.top - 16) / 2, hIcon, 16, 16, 0, NULL, DI_NORMAL);
+                        DestroyIcon(hIcon);
+                        textStart = 32;
+                    }
+                }
+                
                 // Center text
                 SIZE textSize;
                 GetTextExtentPoint32W(hdc, text, wcslen(text), &textSize);
-                int x = (rc.left + rc.right - textSize.cx) / 2;
+                int x = textStart > 0 ? textStart : (rc.left + rc.right - textSize.cx) / 2;
                 int y = (rc.top + rc.bottom - textSize.cy) / 2;
                 
                 // Apply slight offset when pressed
